@@ -3,6 +3,7 @@ package com.example.ToDoList.controller;
 import com.example.ToDoList.dto.request.CreateTaskRequest;
 import com.example.ToDoList.dto.response.ApiResponse;
 import com.example.ToDoList.dto.response.TaskResponse;
+import com.example.ToDoList.exception.ValidationException;
 import com.example.ToDoList.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,27 +23,22 @@ public class TaskController {
     private final TaskService taskService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<?>> createTask(
+    public ResponseEntity<ApiResponse<TaskResponse>> createTask(
             @Valid @RequestBody CreateTaskRequest request,
             BindingResult bindingResult
     ) {
-
         if (bindingResult.hasErrors()) {
             Map<String, String> errors = new HashMap<>();
-            bindingResult.getFieldErrors().forEach(error ->
-                    errors.put(error.getField(), error.getDefaultMessage())
+            bindingResult.getFieldErrors().forEach(err ->
+                    errors.put(err.getField(), err.getDefaultMessage())
             );
-
-            return ResponseEntity
-                    .badRequest()
-                    .body(ApiResponse.error("VALIDATION_FAILED", errors));
+            throw new ValidationException(errors);
         }
 
-        ApiResponse<TaskResponse> response = taskService.createTask(request);
+        TaskResponse data = taskService.createTask(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(response);
+                .body(ApiResponse.success("Task created successfully", data));
     }
 }
-
